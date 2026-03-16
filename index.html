@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Quote Madness — Vote Editor</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=IBM+Plex+Mono:wght@400;700&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{--k:#0A0A0A;--w:#F4F2ED;--g1:#EBEBEB;--g2:#D0D0D0;--g4:#888;--g6:#444;--red:#900;--fd:'Playfair Display',serif;--fm:'IBM Plex Mono',monospace;--fb:'IBM Plex Sans',sans-serif;}
+body{background:var(--w);color:var(--k);font-family:var(--fb);min-height:100vh;}
+
+/* MASTHEAD */
+.mh{border-bottom:3px solid var(--k);position:sticky;top:0;z-index:100;background:var(--w);}
+.mht{display:flex;align-items:stretch;border-bottom:1px solid var(--g2);}
+.logo{font-family:var(--fd);font-size:1.7rem;font-weight:900;letter-spacing:-1px;padding:.55rem 1.4rem;border-right:1px solid var(--g2);line-height:1.1;flex-shrink:0;}
+.logo small{display:block;font-family:var(--fm);font-size:.55rem;font-weight:400;letter-spacing:3px;color:var(--red);margin-top:2px;text-transform:uppercase;}
+.mhmeta{display:flex;align-items:center;padding:0 1.2rem;gap:1rem;flex:1;}
+.statusdot{width:7px;height:7px;border-radius:50%;background:#ccc;flex-shrink:0;}
+.statusdot.ok{background:#2a6;animation:pulse 2s infinite;}
+.statusdot.err{background:var(--red);}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.statustxt{font-family:var(--fm);font-size:.55rem;letter-spacing:1px;text-transform:uppercase;color:var(--g4);}
+.mhnav{display:flex;}
+.nb{font-family:var(--fm);font-size:.6rem;letter-spacing:2px;text-transform:uppercase;padding:.53rem 1.1rem;border:none;background:none;cursor:pointer;color:var(--g4);border-right:1px solid var(--g2);position:relative;}
+.nb:hover{color:var(--k);background:var(--g1);}
+.nb.on{color:var(--k);font-weight:700;}
+.nb.on::after{content:'';position:absolute;bottom:-1px;left:0;right:0;height:2px;background:var(--k);}
+
+/* LAYOUT */
+.wrap{max-width:1100px;margin:0 auto;padding:2rem 1.5rem;}
+.pgtitle{font-family:var(--fd);font-size:2.3rem;font-weight:900;letter-spacing:-1px;border-bottom:2px solid var(--k);padding-bottom:.7rem;margin-bottom:.4rem;}
+.pgsub{font-family:var(--fm);font-size:.56rem;letter-spacing:2px;text-transform:uppercase;color:var(--g4);margin-bottom:1.8rem;}
+.pg{display:none;}.pg.on{display:block;}
+
+/* ACTIONS BAR */
+.actions{display:flex;gap:.5rem;margin-bottom:1.5rem;flex-wrap:wrap;}
+.btn{font-family:var(--fm);font-size:.57rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:.52rem 1rem;border:1px solid var(--k);background:none;color:var(--k);cursor:pointer;transition:all .15s;}
+.btn:hover,.btn.f{background:var(--k);color:var(--w);}
+.btn.f:hover{opacity:.75;}
+.btn.danger{border-color:var(--red);color:var(--red);}
+.btn.danger:hover{background:var(--red);color:var(--w);}
+
+/* VOTE CARDS */
+.vgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:1px;background:var(--g2);border:1px solid var(--g2);}
+.vcard{background:var(--w);padding:1.2rem;}
+.vkey{font-family:var(--fm);font-size:.5rem;letter-spacing:2px;text-transform:uppercase;color:var(--g4);margin-bottom:3px;}
+.vlabel{font-family:var(--fm);font-size:.62rem;color:var(--g6);margin-bottom:.9rem;line-height:1.4;}
+.vrow{display:flex;align-items:center;gap:8px;margin-bottom:6px;padding:6px 8px;border:1px solid var(--g2);transition:border-color .15s;}
+.vrow:hover{border-color:var(--k);}
+.vseed{font-family:var(--fm);font-size:.5rem;color:var(--g4);min-width:18px;}
+.vname{font-family:var(--fm);font-size:.62rem;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.vinp{width:60px;border:1px solid var(--g2);background:var(--w);color:var(--k);padding:4px 6px;font-family:var(--fm);font-size:.7rem;font-weight:700;text-align:center;outline:none;-moz-appearance:textfield;}
+.vinp::-webkit-inner-spin-button,.vinp::-webkit-outer-spin-button{-webkit-appearance:none;}
+.vinp:focus{border-color:var(--k);}
+.vtotal{font-family:var(--fm);font-size:.5rem;color:var(--g4);text-align:right;margin-top:6px;letter-spacing:1px;text-transform:uppercase;}
+.vsep{text-align:center;font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--g4);padding:2px 0;}
+
+/* USER VOTES */
+.utable{width:100%;border-collapse:collapse;border:1px solid var(--g2);}
+.utable th{font-family:var(--fm);font-size:.5rem;letter-spacing:2px;text-transform:uppercase;padding:.5rem .7rem;background:var(--k);color:var(--w);text-align:left;border-right:1px solid var(--g6);}
+.utable th:last-child{border-right:none;}
+.utable td{font-family:var(--fm);font-size:.58rem;padding:.45rem .7rem;border-bottom:1px solid var(--g2);border-right:1px solid var(--g2);}
+.utable td:last-child{border-right:none;}
+.utable tr:hover td{background:var(--g1);}
+.usel{width:100%;border:1px solid var(--g2);background:var(--w);color:var(--k);padding:3px 5px;font-family:var(--fm);font-size:.58rem;outline:none;cursor:pointer;}
+.usel:focus{border-color:var(--k);}
+
+/* RAW JSON */
+.rawbox{width:100%;min-height:400px;border:1px solid var(--g2);background:var(--w);color:var(--k);padding:1rem;font-family:var(--fm);font-size:.65rem;line-height:1.6;outline:none;resize:vertical;tab-size:2;}
+.rawbox:focus{border-color:var(--k);}
+
+/* EMPTY / LOADING */
+.empty{padding:3rem;text-align:center;border:1px solid var(--g2);}
+.empty h3{font-family:var(--fd);font-size:1.4rem;color:var(--g4);}
+.empty p{font-family:var(--fm);font-size:.6rem;color:var(--g4);margin-top:.5rem;}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--g2);border-top-color:var(--k);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:6px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* TOAST */
+#toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--k);color:var(--w);padding:.62rem 1.1rem;font-family:var(--fm);font-size:.59rem;z-index:500;transform:translateY(130%);opacity:0;transition:all .28s;max-width:320px;border-left:3px solid var(--g4);}
+#toast.on{transform:translateY(0);opacity:1;}
+#toast.err{border-left-color:var(--red);}
+
+::-webkit-scrollbar{width:4px;height:4px;}::-webkit-scrollbar-track{background:var(--g1);}::-webkit-scrollbar-thumb{background:var(--g4);}
+</style>
+</head>
+<body>
+
+<div class="mh">
+  <div class="mht">
+    <div class="logo">Quote Madness<small>Firestore Vote Editor</small></div>
+    <div class="mhmeta">
+      <span class="statusdot" id="status-dot"></span>
+      <span class="statustxt" id="status-txt">Connecting…</span>
+    </div>
+  </div>
+  <div class="mhnav">
+    <button class="nb on" data-pg="counts">Vote Counts</button>
+    <button class="nb" data-pg="users">User Votes</button>
+    <button class="nb" data-pg="raw">Raw JSON</button>
+  </div>
+</div>
+
+<div class="pg on" id="pg-counts">
+  <div class="wrap">
+    <div class="pgtitle">Vote Counts</div>
+    <div class="pgsub">Edit vote tallies per matchup &middot; Changes write directly to Firestore</div>
+    <div class="actions">
+      <button class="btn f" id="btn-save-counts">Save Changes</button>
+      <button class="btn" id="btn-reload-counts">Reload</button>
+      <button class="btn danger" id="btn-zero-counts">Zero All Counts</button>
+    </div>
+    <div id="counts-out"><div class="empty"><div class="spinner"></div><p>Loading…</p></div></div>
+  </div>
+</div>
+
+<div class="pg" id="pg-users">
+  <div class="wrap">
+    <div class="pgtitle">User Votes</div>
+    <div class="pgsub">Edit which seed each user voted for per matchup</div>
+    <div class="actions">
+      <button class="btn f" id="btn-save-users">Save All User Changes</button>
+      <button class="btn" id="btn-reload-users">Reload</button>
+    </div>
+    <div id="users-out"><div class="empty"><div class="spinner"></div><p>Loading…</p></div></div>
+  </div>
+</div>
+
+<div class="pg" id="pg-raw">
+  <div class="wrap">
+    <div class="pgtitle">Raw JSON</div>
+    <div class="pgsub">Direct edit of state/voteCounts document</div>
+    <div class="actions">
+      <button class="btn f" id="btn-save-raw">Push to Firestore</button>
+      <button class="btn" id="btn-reload-raw">Reload</button>
+    </div>
+    <textarea class="rawbox" id="raw-editor" spellcheck="false"></textarea>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ── Config ──────────────────────────────────────────────────────────────────
+const PROJECT = 'quotemadness-6f26c';
+const BASE = `https://firestore.googleapis.com/v1/projects/${PROJECT}/databases/(default)/documents`;
+const USERS = ['ray','david','ej','ryan','janna','claire'];
+
+// ── State ───────────────────────────────────────────────────────────────────
+let voteCounts = {};
+let bracketData = null;
+let userVotesAll = {};
+
+// ── Firestore REST helpers ──────────────────────────────────────────────────
+function fsToJs(val) {
+  if (val.stringValue !== undefined) return val.stringValue;
+  if (val.integerValue !== undefined) return parseInt(val.integerValue);
+  if (val.doubleValue !== undefined) return val.doubleValue;
+  if (val.booleanValue !== undefined) return val.booleanValue;
+  if (val.nullValue !== undefined) return null;
+  if (val.mapValue) {
+    const obj = {};
+    const fields = val.mapValue.fields || {};
+    for (const k in fields) obj[k] = fsToJs(fields[k]);
+    return obj;
+  }
+  if (val.arrayValue) {
+    return (val.arrayValue.values || []).map(fsToJs);
+  }
+  return val;
+}
+
+function jsToFs(val) {
+  if (val === null || val === undefined) return { nullValue: null };
+  if (typeof val === 'string') return { stringValue: val };
+  if (typeof val === 'number') {
+    return Number.isInteger(val) ? { integerValue: String(val) } : { doubleValue: val };
+  }
+  if (typeof val === 'boolean') return { booleanValue: val };
+  if (Array.isArray(val)) return { arrayValue: { values: val.map(jsToFs) } };
+  if (typeof val === 'object') {
+    const fields = {};
+    for (const k in val) fields[k] = jsToFs(val[k]);
+    return { mapValue: { fields } };
+  }
+  return { stringValue: String(val) };
+}
+
+async function fsGet(path) {
+  const res = await fetch(`${BASE}/${path}`);
+  if (!res.ok) {
+    if (res.status === 404) return {};
+    throw new Error(`GET ${path}: ${res.status}`);
+  }
+  const doc = await res.json();
+  const out = {};
+  const fields = doc.fields || {};
+  for (const k in fields) out[k] = fsToJs(fields[k]);
+  return out;
+}
+
+async function fsSet(path, data) {
+  const fields = {};
+  for (const k in data) fields[k] = jsToFs(data[k]);
+  const res = await fetch(`${BASE}/${path}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fields })
+  });
+  if (!res.ok) throw new Error(`PATCH ${path}: ${res.status} ${await res.text()}`);
+  return res.json();
+}
+
+// ── Toast ───────────────────────────────────────────────────────────────────
+function toast(msg, isErr) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = isErr ? 'on err' : 'on';
+  clearTimeout(t._tid);
+  t._tid = setTimeout(() => t.className = '', 3000);
+}
+
+// ── Status indicator ────────────────────────────────────────────────────────
+function setStatus(state, txt) {
+  document.getElementById('status-dot').className = 'statusdot ' + state;
+  document.getElementById('status-txt').textContent = txt;
+}
+
+// ── Navigation ──────────────────────────────────────────────────────────────
+document.querySelectorAll('.nb').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.nb').forEach(b => b.classList.remove('on'));
+    document.querySelectorAll('.pg').forEach(p => p.classList.remove('on'));
+    btn.classList.add('on');
+    document.getElementById('pg-' + btn.dataset.pg).classList.add('on');
+  });
+});
+
+// ── Load data ───────────────────────────────────────────────────────────────
+async function loadAll() {
+  setStatus('', 'Loading…');
+  try {
+    const [vc, br] = await Promise.all([
+      fsGet('state/voteCounts'),
+      fsGet('state/bracket')
+    ]);
+    voteCounts = vc;
+    bracketData = br;
+
+    const uLoads = USERS.map(u => fsGet('votes/' + u).then(d => [u, d.picks || {}]));
+    const uResults = await Promise.all(uLoads);
+    userVotesAll = {};
+    uResults.forEach(([u, picks]) => { userVotesAll[u] = picks; });
+
+    setStatus('ok', 'Connected');
+    renderCounts();
+    renderUsers();
+    renderRaw();
+  } catch (e) {
+    console.error(e);
+    setStatus('err', 'Error — check console');
+    toast('Failed to load: ' + e.message, true);
+  }
+}
+
+// ── Matchup label helper ────────────────────────────────────────────────────
+const RNAMES = ['Round 1','Quarterfinal','Semifinal','Regional Final'];
+const R0 = [[5,12],[6,11],[7,10],[8,9]];
+
+function matchLabel(key) {
+  const [ri, ro, mi] = key.split('_').map(Number);
+  const regions = bracketData && bracketData.regions;
+  if (!regions || !regions[ri]) return key;
+  const reg = regions[ri];
+  const rname = RNAMES[ro] || 'Round ' + ro;
+
+  function findTeam(round, matchIdx, slot) {
+    const teams = reg.teams || [];
+    if (round === 0) {
+      const seed = R0[matchIdx] && R0[matchIdx][slot];
+      return teams.find(t => t.seed === seed);
+    }
+    if (round === 1) {
+      if (slot === 0) return teams.find(t => t.seed === [1,2,3,4][matchIdx]);
+      return null;
+    }
+    return null;
+  }
+
+  const t0 = findTeam(ro, mi, 0);
+  const t1 = findTeam(ro, mi, 1);
+  const n0 = t0 ? t0.name : 'TBD';
+  const n1 = t1 ? t1.name : 'TBD';
+  return `${reg.name || 'Region '+(ri+1)} · ${rname}: ${n0} vs ${n1}`;
+}
+
+function seedOptions(key) {
+  const [ri] = key.split('_').map(Number);
+  const regions = bracketData && bracketData.regions;
+  if (!regions || !regions[ri]) return [];
+  return (regions[ri].teams || []).map(t => ({ seed: t.seed, name: t.name }));
+}
+
+// ── Render: Vote Counts ─────────────────────────────────────────────────────
+function renderCounts() {
+  const out = document.getElementById('counts-out');
+  const keys = Object.keys(voteCounts).filter(k => typeof voteCounts[k] === 'object');
+  if (!keys.length) {
+    out.innerHTML = '<div class="empty"><h3>No vote data</h3><p>Nothing in state/voteCounts yet.</p></div>';
+    return;
+  }
+
+  keys.sort();
+  let html = '<div class="vgrid">';
+  keys.forEach(key => {
+    const seeds = voteCounts[key] || {};
+    const seedKeys = Object.keys(seeds).sort((a,b) => Number(a) - Number(b));
+    const total = seedKeys.reduce((s, k) => s + (seeds[k] || 0), 0);
+    html += `<div class="vcard">
+      <div class="vkey">${key}</div>
+      <div class="vlabel">${matchLabel(key)}</div>`;
+    seedKeys.forEach((sk, i) => {
+      if (i === 1) html += '<div class="vsep">VS</div>';
+      const teams = seedOptions(key);
+      const team = teams.find(t => t.seed === Number(sk));
+      html += `<div class="vrow">
+        <span class="vseed">#${sk}</span>
+        <span class="vname">${team ? team.name : 'Seed ' + sk}</span>
+        <input type="number" class="vinp" data-key="${key}" data-seed="${sk}" value="${seeds[sk] || 0}" min="0"/>
+      </div>`;
+    });
+    html += `<div class="vtotal">${total} total votes</div></div>`;
+  });
+  html += '</div>';
+  out.innerHTML = html;
+}
+
+// ── Render: User Votes ──────────────────────────────────────────────────────
+function renderUsers() {
+  const out = document.getElementById('users-out');
+  const allKeys = new Set();
+  USERS.forEach(u => { Object.keys(userVotesAll[u] || {}).forEach(k => allKeys.add(k)); });
+  Object.keys(voteCounts).filter(k => typeof voteCounts[k] === 'object').forEach(k => allKeys.add(k));
+  const keys = [...allKeys].sort();
+
+  if (!keys.length) {
+    out.innerHTML = '<div class="empty"><h3>No matchup keys found</h3></div>';
+    return;
+  }
+
+  let html = '<div style="overflow-x:auto"><table class="utable"><thead><tr><th>Matchup</th>';
+  USERS.forEach(u => { html += `<th>${u.charAt(0).toUpperCase() + u.slice(1)}</th>`; });
+  html += '</tr></thead><tbody>';
+
+  keys.forEach(key => {
+    const teams = seedOptions(key);
+    html += `<tr><td style="min-width:120px"><span style="color:var(--g4);font-size:.5rem">${key}</span><br>${matchLabel(key)}</td>`;
+    USERS.forEach(u => {
+      const pick = userVotesAll[u] && userVotesAll[u][key];
+      html += `<td><select class="usel" data-user="${u}" data-key="${key}">`;
+      html += `<option value="">—</option>`;
+      teams.forEach(t => {
+        html += `<option value="${t.seed}"${pick === t.seed ? ' selected' : ''}>#${t.seed} ${t.name}</option>`;
+      });
+      html += `</select></td>`;
+    });
+    html += '</tr>';
+  });
+
+  html += '</tbody></table></div>';
+  out.innerHTML = html;
+}
+
+// ── Render: Raw JSON ────────────────────────────────────────────────────────
+function renderRaw() {
+  document.getElementById('raw-editor').value = JSON.stringify(voteCounts, null, 2);
+}
+
+// ── Save: Vote Counts ───────────────────────────────────────────────────────
+document.getElementById('btn-save-counts').addEventListener('click', async () => {
+  document.querySelectorAll('#counts-out .vinp').forEach(inp => {
+    const key = inp.dataset.key;
+    const seed = inp.dataset.seed;
+    if (!voteCounts[key]) voteCounts[key] = {};
+    voteCounts[key][seed] = parseInt(inp.value) || 0;
+  });
+  try {
+    await fsSet('state/voteCounts', voteCounts);
+    toast('Vote counts saved.');
+    renderRaw();
+  } catch (e) {
+    toast('Save failed: ' + e.message, true);
+  }
+});
+
+document.getElementById('btn-reload-counts').addEventListener('click', loadAll);
+
+document.getElementById('btn-zero-counts').addEventListener('click', async () => {
+  if (!confirm('Zero out all vote counts?')) return;
+  for (const key in voteCounts) {
+    if (typeof voteCounts[key] === 'object') {
+      for (const seed in voteCounts[key]) voteCounts[key][seed] = 0;
+    }
+  }
+  try {
+    await fsSet('state/voteCounts', voteCounts);
+    toast('All counts zeroed.');
+    renderCounts();
+    renderRaw();
+  } catch (e) {
+    toast('Failed: ' + e.message, true);
+  }
+});
+
+// ── Save: User Votes ────────────────────────────────────────────────────────
+document.getElementById('btn-save-users').addEventListener('click', async () => {
+  document.querySelectorAll('#users-out .usel').forEach(sel => {
+    const u = sel.dataset.user;
+    const key = sel.dataset.key;
+    if (!userVotesAll[u]) userVotesAll[u] = {};
+    if (sel.value) userVotesAll[u][key] = parseInt(sel.value);
+    else delete userVotesAll[u][key];
+  });
+  try {
+    await Promise.all(USERS.map(u => fsSet('votes/' + u, { picks: userVotesAll[u] || {} })));
+    toast('All user votes saved.');
+  } catch (e) {
+    toast('Save failed: ' + e.message, true);
+  }
+});
+
+document.getElementById('btn-reload-users').addEventListener('click', loadAll);
+
+// ── Save: Raw JSON ──────────────────────────────────────────────────────────
+document.getElementById('btn-save-raw').addEventListener('click', async () => {
+  try {
+    const parsed = JSON.parse(document.getElementById('raw-editor').value);
+    voteCounts = parsed;
+    await fsSet('state/voteCounts', voteCounts);
+    toast('Raw JSON pushed to Firestore.');
+    renderCounts();
+  } catch (e) {
+    toast('Error: ' + e.message, true);
+  }
+});
+
+document.getElementById('btn-reload-raw').addEventListener('click', loadAll);
+
+// ── Init ────────────────────────────────────────────────────────────────────
+loadAll();
+</script>
+</body>
+</html>
