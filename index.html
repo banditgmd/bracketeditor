@@ -1,454 +1,1058 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Quote Madness — Vote Editor</title>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=IBM+Plex+Mono:wght@400;700&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<title>QM Admin — Firestore Editor</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=IBM+Plex+Mono:wght@400;500;700&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;}
-:root{--k:#0A0A0A;--w:#F4F2ED;--g1:#EBEBEB;--g2:#D0D0D0;--g4:#888;--g6:#444;--red:#900;--fd:'Playfair Display',serif;--fm:'IBM Plex Mono',monospace;--fb:'IBM Plex Sans',sans-serif;}
-body{background:var(--w);color:var(--k);font-family:var(--fb);min-height:100vh;}
+:root{
+  --k:#0A0A0A;--w:#F4F2ED;--g1:#EBEBEB;--g2:#D0D0D0;--g3:#BDBDBD;--g4:#888;--g6:#444;
+  --red:#8B0000;--grn:#1a5c1a;--blu:#1a2c5c;
+  --fd:'Playfair Display',serif;--fm:'IBM Plex Mono',monospace;--fb:'IBM Plex Sans',sans-serif;
+}
+body{background:var(--k);color:var(--w);font-family:var(--fb);min-height:100vh;line-height:1.4;}
 
-/* MASTHEAD */
-.mh{border-bottom:3px solid var(--k);position:sticky;top:0;z-index:100;background:var(--w);}
-.mht{display:flex;align-items:stretch;border-bottom:1px solid var(--g2);}
-.logo{font-family:var(--fd);font-size:1.7rem;font-weight:900;letter-spacing:-1px;padding:.55rem 1.4rem;border-right:1px solid var(--g2);line-height:1.1;flex-shrink:0;}
-.logo small{display:block;font-family:var(--fm);font-size:.55rem;font-weight:400;letter-spacing:3px;color:var(--red);margin-top:2px;text-transform:uppercase;}
-.mhmeta{display:flex;align-items:center;padding:0 1.2rem;gap:1rem;flex:1;}
-.statusdot{width:7px;height:7px;border-radius:50%;background:#ccc;flex-shrink:0;}
-.statusdot.ok{background:#2a6;animation:pulse 2s infinite;}
-.statusdot.err{background:var(--red);}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
-.statustxt{font-family:var(--fm);font-size:.55rem;letter-spacing:1px;text-transform:uppercase;color:var(--g4);}
-.mhnav{display:flex;}
-.nb{font-family:var(--fm);font-size:.6rem;letter-spacing:2px;text-transform:uppercase;padding:.53rem 1.1rem;border:none;background:none;cursor:pointer;color:var(--g4);border-right:1px solid var(--g2);position:relative;}
-.nb:hover{color:var(--k);background:var(--g1);}
-.nb.on{color:var(--k);font-weight:700;}
-.nb.on::after{content:'';position:absolute;bottom:-1px;left:0;right:0;height:2px;background:var(--k);}
+/* ── AUTH ── */
+#auth{position:fixed;inset:0;background:var(–k);z-index:999;display:flex;align-items:center;justify-content:center;border-right:3px solid var(–g6);}
+.abox{width:380px;max-width:92vw;border:1px solid var(–g6);padding:2.5rem;}
+.atitle{font-family:var(–fd);font-size:2.6rem;font-weight:900;letter-spacing:-2px;line-height:.92;padding-bottom:1.2rem;margin-bottom:2rem;border-bottom:1px solid var(–g6);}
+.atitle small{display:block;font-family:var(–fm);font-size:.5rem;font-weight:400;letter-spacing:4px;color:var(–g4);margin-top:8px;text-transform:uppercase;}
+.albl{font-family:var(–fm);font-size:.5rem;letter-spacing:3px;text-transform:uppercase;color:var(–g4);display:block;margin-bottom:5px;}
+.ainp{width:100%;border:1px solid var(–g6);background:transparent;color:var(–w);padding:.6rem .8rem;font-family:var(–fm);font-size:.82rem;outline:none;margin-bottom:1rem;}
+.ainp:focus{border-color:var(–w);}
+.abtn{width:100%;padding:.7rem;font-family:var(–fm);font-size:.6rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;background:var(–w);color:var(–k);border:none;cursor:pointer;margin-top:.2rem;}
+.abtn:hover{background:var(–g2);}
+.aerr{font-family:var(–fm);font-size:.58rem;color:#f55;margin-bottom:.6rem;min-height:1rem;}
 
-/* LAYOUT */
-.wrap{max-width:1100px;margin:0 auto;padding:2rem 1.5rem;}
-.pgtitle{font-family:var(--fd);font-size:2.3rem;font-weight:900;letter-spacing:-1px;border-bottom:2px solid var(--k);padding-bottom:.7rem;margin-bottom:.4rem;}
-.pgsub{font-family:var(--fm);font-size:.56rem;letter-spacing:2px;text-transform:uppercase;color:var(--g4);margin-bottom:1.8rem;}
-.pg{display:none;}.pg.on{display:block;}
+/* ── LAYOUT ── */
+#shell{display:none;height:100vh;overflow:hidden;flex-direction:column;}
+#shell.on{display:flex;}
 
-/* ACTIONS BAR */
-.actions{display:flex;gap:.5rem;margin-bottom:1.5rem;flex-wrap:wrap;}
-.btn{font-family:var(--fm);font-size:.57rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:.52rem 1rem;border:1px solid var(--k);background:none;color:var(--k);cursor:pointer;transition:all .15s;}
-.btn:hover,.btn.f{background:var(--k);color:var(--w);}
-.btn.f:hover{opacity:.75;}
-.btn.danger{border-color:var(--red);color:var(--red);}
-.btn.danger:hover{background:var(--red);color:var(--w);}
+/* ── TOPBAR ── */
+#topbar{border-bottom:1px solid var(–g6);display:flex;align-items:stretch;flex-shrink:0;background:var(–k);}
+.tb-brand{font-family:var(–fd);font-size:1.35rem;font-weight:900;letter-spacing:-1px;padding:.7rem 1.5rem;border-right:1px solid var(–g6);display:flex;align-items:center;gap:.9rem;white-space:nowrap;}
+.tb-brand small{font-family:var(–fm);font-size:.48rem;font-weight:400;letter-spacing:4px;color:var(–g4);text-transform:uppercase;display:block;margin-top:2px;}
+.admin-pill{font-family:var(–fm);font-size:.45rem;letter-spacing:2px;text-transform:uppercase;background:var(–red);color:var(–w);padding:.18rem .55rem;border-radius:1px;align-self:center;}
+.tb-status{display:flex;align-items:center;gap:.5rem;padding:0 1.2rem;border-right:1px solid var(–g6);}
+.status-dot{width:7px;height:7px;border-radius:50%;background:var(–g4);flex-shrink:0;}
+.status-dot.live{background:#4caf50;animation:pulse 2s infinite;}
+.status-dot.err{background:#f44;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.status-txt{font-family:var(–fm);font-size:.52rem;color:var(–g4);}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:.8rem;padding:0 1.2rem;border-left:1px solid var(–g6);}
+.tb-user{font-family:var(–fm);font-size:.52rem;color:var(–g4);}
+.tb-logout{font-family:var(–fm);font-size:.48rem;letter-spacing:1px;text-transform:uppercase;background:none;border:1px solid var(–g6);color:var(–g4);padding:.22rem .6rem;cursor:pointer;}
+.tb-logout:hover{border-color:var(–w);color:var(–w);}
 
-/* VOTE CARDS */
-.vgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:1px;background:var(--g2);border:1px solid var(--g2);}
-.vcard{background:var(--w);padding:1.2rem;}
-.vkey{font-family:var(--fm);font-size:.5rem;letter-spacing:2px;text-transform:uppercase;color:var(--g4);margin-bottom:3px;}
-.vlabel{font-family:var(--fm);font-size:.62rem;color:var(--g6);margin-bottom:.9rem;line-height:1.4;}
-.vrow{display:flex;align-items:center;gap:8px;margin-bottom:6px;padding:6px 8px;border:1px solid var(--g2);transition:border-color .15s;}
-.vrow:hover{border-color:var(--k);}
-.vseed{font-family:var(--fm);font-size:.5rem;color:var(--g4);min-width:18px;}
-.vname{font-family:var(--fm);font-size:.62rem;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.vinp{width:60px;border:1px solid var(--g2);background:var(--w);color:var(--k);padding:4px 6px;font-family:var(--fm);font-size:.7rem;font-weight:700;text-align:center;outline:none;-moz-appearance:textfield;}
-.vinp::-webkit-inner-spin-button,.vinp::-webkit-outer-spin-button{-webkit-appearance:none;}
-.vinp:focus{border-color:var(--k);}
-.vtotal{font-family:var(--fm);font-size:.5rem;color:var(--g4);text-align:right;margin-top:6px;letter-spacing:1px;text-transform:uppercase;}
-.vsep{text-align:center;font-family:var(--fm);font-size:.52rem;letter-spacing:3px;color:var(--g4);padding:2px 0;}
+/* ── TABS ── */
+#tabs{display:flex;border-bottom:1px solid var(–g6);flex-shrink:0;background:var(–k);overflow-x:auto;}
+.tab{font-family:var(–fm);font-size:.52rem;letter-spacing:2px;text-transform:uppercase;padding:.48rem 1.1rem;border:none;background:none;color:var(–g4);cursor:pointer;border-right:1px solid var(–g6);white-space:nowrap;position:relative;}
+.tab:hover{color:var(–w);background:rgba(255,255,255,.04);}
+.tab.on{color:var(–w);background:rgba(255,255,255,.07);}
+.tab.on::after{content:’’;position:absolute;bottom:0;left:0;right:0;height:2px;background:var(–w);}
+.tab-num{font-family:var(–fm);font-size:.42rem;color:var(–g4);margin-left:4px;}
 
-/* USER VOTES */
-.utable{width:100%;border-collapse:collapse;border:1px solid var(--g2);}
-.utable th{font-family:var(--fm);font-size:.5rem;letter-spacing:2px;text-transform:uppercase;padding:.5rem .7rem;background:var(--k);color:var(--w);text-align:left;border-right:1px solid var(--g6);}
-.utable th:last-child{border-right:none;}
-.utable td{font-family:var(--fm);font-size:.58rem;padding:.45rem .7rem;border-bottom:1px solid var(--g2);border-right:1px solid var(--g2);}
-.utable td:last-child{border-right:none;}
-.utable tr:hover td{background:var(--g1);}
-.usel{width:100%;border:1px solid var(--g2);background:var(--w);color:var(--k);padding:3px 5px;font-family:var(--fm);font-size:.58rem;outline:none;cursor:pointer;}
-.usel:focus{border-color:var(--k);}
+/* ── BODY ── */
+#body{flex:1;overflow:hidden;display:flex;}
+.panel{flex:1;overflow-y:auto;display:none;padding:0;}
+.panel.on{display:block;}
 
-/* RAW JSON */
-.rawbox{width:100%;min-height:400px;border:1px solid var(--g2);background:var(--w);color:var(--k);padding:1rem;font-family:var(--fm);font-size:.65rem;line-height:1.6;outline:none;resize:vertical;tab-size:2;}
-.rawbox:focus{border-color:var(--k);}
+/* ── SECTION ── */
+.sec{border-bottom:1px solid var(–g6);}
+.sec-hdr{padding:.9rem 1.4rem;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,.06);position:sticky;top:0;background:var(–k);z-index:10;}
+.sec-hdr h2{font-family:var(–fm);font-size:.58rem;font-weight:700;letter-spacing:3px;text-transform:uppercase;}
+.sec-hdr .sec-meta{font-family:var(–fm);font-size:.48rem;color:var(–g4);}
+.sec-body{padding:1.4rem;}
 
-/* EMPTY / LOADING */
-.empty{padding:3rem;text-align:center;border:1px solid var(--g2);}
-.empty h3{font-family:var(--fd);font-size:1.4rem;color:var(--g4);}
-.empty p{font-family:var(--fm);font-size:.6rem;color:var(--g4);margin-top:.5rem;}
-.spinner{display:inline-block;width:14px;height:14px;border:2px solid var(--g2);border-top-color:var(--k);border-radius:50%;animation:spin .6s linear infinite;vertical-align:middle;margin-right:6px;}
-@keyframes spin{to{transform:rotate(360deg)}}
+/* ── RAW JSON EDITOR ── */
+.doc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:1px;background:var(–g6);}
+.doc-card{background:var(–k);padding:1.2rem;}
+.doc-path{font-family:var(–fm);font-size:.5rem;letter-spacing:2px;text-transform:uppercase;color:var(–g4);margin-bottom:.6rem;}
+.doc-path span{color:var(–w);}
+.doc-ta{width:100%;background:#111;color:#c8ffb3;font-family:var(–fm);font-size:.58rem;border:1px solid var(–g6);padding:.6rem .8rem;outline:none;resize:vertical;min-height:160px;line-height:1.6;}
+.doc-ta:focus{border-color:var(–g3);}
+.doc-actions{display:flex;gap:5px;margin-top:.5rem;align-items:center;}
+.doc-save{font-family:var(–fm);font-size:.48rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;background:var(–w);color:var(–k);border:none;padding:.32rem .75rem;cursor:pointer;}
+.doc-save:hover{background:var(–g2);}
+.doc-reload{font-family:var(–fm);font-size:.48rem;letter-spacing:2px;text-transform:uppercase;background:none;border:1px solid var(–g6);color:var(–g4);padding:.32rem .75rem;cursor:pointer;}
+.doc-reload:hover{border-color:var(–w);color:var(–w);}
+.doc-msg{font-family:var(–fm);font-size:.48rem;margin-left:.4rem;}
+.doc-msg.ok{color:#4caf50;}
+.doc-msg.err{color:#f55;}
+.doc-ts{font-family:var(–fm);font-size:.44rem;color:var(–g4);margin-left:auto;}
 
-/* TOAST */
-#toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--k);color:var(--w);padding:.62rem 1.1rem;font-family:var(--fm);font-size:.59rem;z-index:500;transform:translateY(130%);opacity:0;transition:all .28s;max-width:320px;border-left:3px solid var(--g4);}
+/* ── BRACKET BUILDER ── */
+.rg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1px;background:var(–g6);}
+.rg-card{background:var(–k);padding:1.2rem;}
+.rg-label{font-family:var(–fm);font-size:.48rem;letter-spacing:3px;text-transform:uppercase;color:var(–g4);margin-bottom:.8rem;}
+.rg-name-inp{width:100%;background:transparent;border:none;border-bottom:1px solid var(–g6);color:var(–w);font-family:var(–fd);font-size:1.05rem;font-weight:700;letter-spacing:-.5px;padding:.3rem 0;outline:none;margin-bottom:.9rem;}
+.rg-name-inp:focus{border-bottom-color:var(–w);}
+.seed-row{display:flex;gap:5px;align-items:center;margin-bottom:3px;}
+.seed-num{font-family:var(–fm);font-size:.46rem;color:var(–g6);min-width:16px;text-align:right;}
+.seed-inp{flex:1;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,.07);color:var(–w);font-family:var(–fm);font-size:.6rem;padding:.22rem .3rem;outline:none;}
+.seed-inp:focus{border-bottom-color:var(–w);}
+.seed-inp::placeholder{color:var(–g6);}
+.seed-num.hl{color:var(–g4);}/* 1-4 highlighted */
+.pub-bar{display:flex;gap:6px;align-items:center;padding:1rem 1.4rem;border-top:1px solid var(–g6);background:#0d0d0d;position:sticky;bottom:0;}
+.pub-info{font-family:var(–fm);font-size:.5rem;color:var(–g4);}
+.btn{font-family:var(–fm);font-size:.52rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;padding:.42rem .9rem;cursor:pointer;}
+.btn-dark{background:var(–w);color:var(–k);border:none;}
+.btn-dark:hover{background:var(–g2);}
+.btn-ghost{background:none;border:1px solid var(–g6);color:var(–g4);}
+.btn-ghost:hover{border-color:var(–w);color:var(–w);}
+.btn-red{background:none;border:1px solid var(–red);color:var(–red);}
+.btn-red:hover{background:var(–red);color:var(–w);}
+
+/* ── RESULTS EDITOR ── */
+.rtabs{display:flex;border-bottom:1px solid var(–g6);overflow-x:auto;}
+.rtab{font-family:var(–fm);font-size:.5rem;letter-spacing:2px;text-transform:uppercase;padding:.4rem .85rem;border:none;background:none;color:var(–g4);cursor:pointer;border-right:1px solid var(–g6);white-space:nowrap;}
+.rtab:hover{color:var(–w);}
+.rtab.on{color:var(–w);background:rgba(255,255,255,.05);}
+.rounds-scroll{display:flex;overflow-x:auto;gap:1px;background:var(–g6);padding:1px;}
+.round-col{background:var(–k);min-width:175px;padding:.8rem;}
+.round-title{font-family:var(–fm);font-size:.46rem;letter-spacing:3px;text-transform:uppercase;color:var(–g4);padding-bottom:.5rem;margin-bottom:.6rem;border-bottom:1px solid rgba(255,255,255,.06);}
+.match-box{border:1px solid rgba(255,255,255,.08);margin-bottom:6px;}
+.match-slot{display:flex;align-items:center;gap:6px;padding:5px 7px;font-family:var(–fm);font-size:.54rem;cursor:pointer;min-height:26px;}
+.match-slot:hover:not(.ms-win):not(.ms-tbd){background:rgba(255,255,255,.05);}
+.match-slot.ms-win{background:var(–w);color:var(–k);}
+.match-slot.ms-win .ms-seed{color:var(–g4);}
+.match-slot.ms-los{opacity:.2;}
+.match-slot.ms-tbd{color:#333;font-style:italic;cursor:default;}
+.ms-seed{font-size:.44rem;color:var(–g6);min-width:14px;}
+.ms-div{height:1px;background:rgba(255,255,255,.06);}
+.ff-note{font-family:var(–fm);font-size:.5rem;color:var(–g4);padding:.7rem;border:1px solid rgba(255,255,255,.06);margin-bottom:6px;line-height:1.6;}
+
+/* ── MATCHUP TOGGLES ── */
+.mt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:1px;background:var(–g6);}
+.mt-cell{background:var(–k);padding:.7rem 1rem;display:flex;align-items:center;gap:.8rem;cursor:pointer;}
+.mt-cell:hover{background:rgba(255,255,255,.03);}
+.mt-cb{width:14px;height:14px;accent-color:var(–w);cursor:pointer;flex-shrink:0;}
+.mt-lbl{font-family:var(–fm);font-size:.55rem;cursor:pointer;flex:1;line-height:1.5;}
+.mt-lbl .mt-region{font-size:.44rem;letter-spacing:2px;text-transform:uppercase;color:var(–g4);display:block;margin-bottom:2px;}
+.mt-tbd{color:var(–g6);font-style:italic;}
+.mt-bar{display:flex;gap:.5rem;padding:.9rem 1.4rem;border-top:1px solid var(–g6);background:#0d0d0d;position:sticky;bottom:0;align-items:center;}
+.mt-count{font-family:var(–fm);font-size:.5rem;color:var(–g4);}
+
+/* ── VOTE MONITOR ── */
+.vm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1px;background:var(–g6);}
+.vm-card{background:var(–k);padding:1rem;}
+.vm-key{font-family:var(–fm);font-size:.44rem;color:var(–g6);margin-bottom:.3rem;}
+.vm-matchup{font-family:var(–fm);font-size:.58rem;margin-bottom:.8rem;}
+.vm-opt{display:flex;align-items:center;gap:6px;margin-bottom:4px;position:relative;}
+.vm-bar-bg{position:absolute;left:0;top:0;bottom:0;background:rgba(255,255,255,.07);pointer-events:none;}
+.vm-row-inner{display:flex;align-items:center;gap:6px;position:relative;z-index:1;width:100%;padding:3px 5px;}
+.vm-seed{font-family:var(–fm);font-size:.44rem;color:var(–g4);min-width:14px;}
+.vm-name{font-family:var(–fm);font-size:.56rem;flex:1;}
+.vm-cnt{font-family:var(–fm);font-size:.5rem;color:var(–g4);}
+.vm-pct{font-family:var(–fm);font-size:.5rem;color:var(–g4);min-width:30px;text-align:right;}
+.vm-total{font-family:var(–fm);font-size:.44rem;color:var(–g6);margin-top:.4rem;letter-spacing:1px;text-transform:uppercase;}
+.vm-open{display:inline-block;font-family:var(–fm);font-size:.42rem;letter-spacing:1px;text-transform:uppercase;background:rgba(76,175,80,.15);color:#4caf50;padding:.1rem .4rem;margin-bottom:.4rem;}
+.vm-closed{display:inline-block;font-family:var(–fm);font-size:.42rem;letter-spacing:1px;text-transform:uppercase;background:rgba(255,255,255,.04);color:var(–g6);padding:.1rem .4rem;margin-bottom:.4rem;}
+
+/* ── USER DATA ── */
+.ud-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1px;background:var(–g6);}
+.ud-card{background:var(–k);}
+.ud-hdr{padding:.7rem 1rem;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;justify-content:space-between;}
+.ud-name{font-family:var(–fd);font-size:1.1rem;font-weight:700;letter-spacing:-.5px;}
+.ud-actions{display:flex;gap:4px;}
+.ud-body{padding:.8rem 1rem;}
+.ud-sec-lbl{font-family:var(–fm);font-size:.44rem;letter-spacing:3px;text-transform:uppercase;color:var(–g4);margin-bottom:.4rem;margin-top:.6rem;}
+.ud-vote-row{display:flex;gap:6px;font-family:var(–fm);font-size:.5rem;padding:2px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+.ud-vote-key{color:var(–g4);flex:1;}
+.ud-vote-val{color:var(–w);}
+.ud-empty{font-family:var(–fm);font-size:.5rem;color:var(–g6);font-style:italic;}
+.ud-clear-btn{font-family:var(–fm);font-size:.44rem;letter-spacing:1px;text-transform:uppercase;background:none;border:1px solid rgba(139,0,0,.4);color:var(–red);padding:.2rem .5rem;cursor:pointer;}
+.ud-clear-btn:hover{background:var(–red);color:var(–w);}
+
+/* ── DANGER ── */
+.danger-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:1px;background:rgba(139,0,0,.15);}
+.danger-card{background:var(–k);padding:1.2rem;}
+.danger-title{font-family:var(–fm);font-size:.5rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(–red);margin-bottom:.5rem;}
+.danger-desc{font-family:var(–fb);font-size:.62rem;color:var(–g4);margin-bottom:1rem;line-height:1.6;}
+
+/* ── TOAST ── */
+#toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(–w);color:var(–k);padding:.6rem 1rem;font-family:var(–fm);font-size:.56rem;z-index:999;transform:translateY(130%);opacity:0;transition:all .22s;max-width:300px;border-left:3px solid var(–k);}
 #toast.on{transform:translateY(0);opacity:1;}
-#toast.err{border-left-color:var(--red);}
+#toast.err{border-left-color:var(–red);}
 
-::-webkit-scrollbar{width:4px;height:4px;}::-webkit-scrollbar-track{background:var(--g1);}::-webkit-scrollbar-thumb{background:var(--g4);}
+/* ── MISC ── */
+.empty-state{padding:3rem;text-align:center;}
+.empty-state p{font-family:var(–fm);font-size:.56rem;color:var(–g6);}
+.divider{height:1px;background:var(–g6);margin:1px 0;}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(–g6);}
 </style>
+
 </head>
 <body>
 
-<div class="mh">
-  <div class="mht">
-    <div class="logo">Quote Madness<small>Firestore Vote Editor</small></div>
-    <div class="mhmeta">
-      <span class="statusdot" id="status-dot"></span>
-      <span class="statustxt" id="status-txt">Connecting…</span>
-    </div>
-  </div>
-  <div class="mhnav">
-    <button class="nb on" data-pg="counts">Vote Counts</button>
-    <button class="nb" data-pg="users">User Votes</button>
-    <button class="nb" data-pg="raw">Raw JSON</button>
+<!-- AUTH -->
+
+<div id="auth">
+  <div class="abox">
+    <div class="atitle">QM Admin<small>Firestore Editor &middot; Internal Tool</small></div>
+    <div class="aerr" id="auth-err"></div>
+    <label class="albl">Admin Password</label>
+    <input type="password" class="ainp" id="inp-pass" placeholder="Enter EJ's password"/>
+    <button class="abtn" id="btn-signin">Access Admin Panel</button>
   </div>
 </div>
 
-<div class="pg on" id="pg-counts">
-  <div class="wrap">
-    <div class="pgtitle">Vote Counts</div>
-    <div class="pgsub">Edit vote tallies per matchup &middot; Changes write directly to Firestore</div>
-    <div class="actions">
-      <button class="btn f" id="btn-save-counts">Save Changes</button>
-      <button class="btn" id="btn-reload-counts">Reload</button>
-      <button class="btn danger" id="btn-zero-counts">Zero All Counts</button>
+<!-- SHELL -->
+
+<div id="shell">
+  <!-- Topbar -->
+  <div id="topbar">
+    <div class="tb-brand">
+      QM Admin<span class="admin-pill">INTERNAL</span>
+      <small>Firestore Editor</small>
     </div>
-    <div id="counts-out"><div class="empty"><div class="spinner"></div><p>Loading…</p></div></div>
+    <div class="tb-status">
+      <div class="status-dot" id="fb-dot"></div>
+      <span class="status-txt" id="fb-txt">Connecting…</span>
+    </div>
+    <div class="tb-right">
+      <span class="tb-user" id="tb-user"></span>
+      <button class="tb-logout" id="btn-logout">Sign Out</button>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+
+  <div id="tabs">
+    <button class="tab on" data-tab="raw">Raw JSON<span class="tab-num" id="tn-raw"></span></button>
+    <button class="tab" data-tab="bracket">Bracket Builder</button>
+    <button class="tab" data-tab="results">Results</button>
+    <button class="tab" data-tab="matchups">Matchups<span class="tab-num" id="tn-matchups"></span></button>
+    <button class="tab" data-tab="votes">Vote Monitor</button>
+    <button class="tab" data-tab="users">User Data</button>
+    <button class="tab" data-tab="danger" style="color:var(--red);">Danger Zone</button>
+  </div>
+
+  <!-- Body -->
+
+  <div id="body">
+
+```
+<!-- RAW JSON -->
+<div class="panel on" id="tab-raw">
+  <div class="sec">
+    <div class="sec-hdr">
+      <h2>Raw Firestore Documents</h2>
+      <span class="sec-meta">Direct JSON editing for all state documents</span>
+    </div>
+    <div class="sec-body">
+      <div class="doc-grid" id="raw-grid"></div>
+    </div>
   </div>
 </div>
 
-<div class="pg" id="pg-users">
-  <div class="wrap">
-    <div class="pgtitle">User Votes</div>
-    <div class="pgsub">Edit which seed each user voted for per matchup</div>
-    <div class="actions">
-      <button class="btn f" id="btn-save-users">Save All User Changes</button>
-      <button class="btn" id="btn-reload-users">Reload</button>
+<!-- BRACKET BUILDER -->
+<div class="panel" id="tab-bracket">
+  <div class="sec">
+    <div class="sec-hdr">
+      <h2>Bracket Builder</h2>
+      <span class="sec-meta">4 regions &times; 12 quotes each · Seeds 1–12</span>
     </div>
-    <div id="users-out"><div class="empty"><div class="spinner"></div><p>Loading…</p></div></div>
+    <div class="sec-body">
+      <div class="rg-grid" id="bracket-builder"></div>
+    </div>
+    <div class="pub-bar">
+      <button class="btn btn-ghost" id="btn-load-bracket">Load Current</button>
+      <button class="btn btn-dark" id="btn-pub-bracket">Publish Bracket</button>
+      <span class="pub-info" id="bracket-pub-info"></span>
+    </div>
   </div>
 </div>
 
-<div class="pg" id="pg-raw">
-  <div class="wrap">
-    <div class="pgtitle">Raw JSON</div>
-    <div class="pgsub">Direct edit of state/voteCounts document</div>
-    <div class="actions">
-      <button class="btn f" id="btn-save-raw">Push to Firestore</button>
-      <button class="btn" id="btn-reload-raw">Reload</button>
+<!-- RESULTS -->
+<div class="panel" id="tab-results">
+  <div class="sec">
+    <div class="sec-hdr">
+      <h2>Advance Winners</h2>
+      <span class="sec-meta">Click to advance · Click again to undo</span>
     </div>
-    <textarea class="rawbox" id="raw-editor" spellcheck="false"></textarea>
+    <div class="sec-body" style="padding:0;">
+      <div class="rtabs" id="results-tabs"></div>
+      <div style="padding:1rem;" id="results-body"></div>
+    </div>
   </div>
 </div>
+
+<!-- MATCHUPS -->
+<div class="panel" id="tab-matchups">
+  <div class="sec">
+    <div class="sec-hdr">
+      <h2>Open Matchups</h2>
+      <span class="sec-meta">Toggle which matchups are available for voting</span>
+    </div>
+    <div class="mt-grid" id="matchup-grid"></div>
+    <div class="mt-bar">
+      <button class="btn btn-dark" id="btn-save-matchups">Save Open Matchups</button>
+      <span class="mt-count" id="mt-count-txt"></span>
+    </div>
+  </div>
+</div>
+
+<!-- VOTE MONITOR -->
+<div class="panel" id="tab-votes">
+  <div class="sec">
+    <div class="sec-hdr">
+      <h2>Vote Monitor</h2>
+      <span class="sec-meta">Live vote counts · All matchups</span>
+    </div>
+    <div class="sec-body">
+      <div class="vm-grid" id="vote-monitor"></div>
+    </div>
+  </div>
+</div>
+
+<!-- USER DATA -->
+<div class="panel" id="tab-users">
+  <div class="sec">
+    <div class="sec-hdr">
+      <h2>User Data</h2>
+      <span class="sec-meta">Each player's votes and bracket predictions</span>
+    </div>
+    <div class="sec-body">
+      <div class="ud-grid" id="user-grid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- DANGER -->
+<div class="panel" id="tab-danger">
+  <div class="sec">
+    <div class="sec-hdr"><h2 style="color:var(--red)">Danger Zone</h2></div>
+    <div class="sec-body">
+      <div class="danger-grid" id="danger-grid">
+        <div class="danger-card">
+          <div class="danger-title">Clear All Votes</div>
+          <div class="danger-desc">Removes all vote data from every player and resets voteCounts. Bracket and results are unaffected.</div>
+          <button class="btn btn-red" id="dz-clearvotes">Clear All Votes</button>
+        </div>
+        <div class="danger-card">
+          <div class="danger-title">Clear Results</div>
+          <div class="danger-desc">Wipes all match results (winners, Final Four, champion). Bracket data is preserved.</div>
+          <button class="btn btn-red" id="dz-clearresults">Clear Results</button>
+        </div>
+        <div class="danger-card">
+          <div class="danger-title">Clear Active Matchups</div>
+          <div class="danger-desc">Closes all open voting matchups. No votes can be cast until matchups are re-opened.</div>
+          <button class="btn btn-red" id="dz-clearactive">Close All Matchups</button>
+        </div>
+        <div class="danger-card">
+          <div class="danger-title">Clear All Predictions</div>
+          <div class="danger-desc">Wipes every user's bracket picks. Irreversible.</div>
+          <button class="btn btn-red" id="dz-clearpreds">Clear All Picks</button>
+        </div>
+        <div class="danger-card" style="border:1px solid var(--red);">
+          <div class="danger-title">☢ NUKE EVERYTHING</div>
+          <div class="danger-desc">Deletes all state: bracket, results, votes, predictions, matchups. Full reset. Do not press unless you mean it.</div>
+          <button class="btn btn-red" id="dz-nuke">NUKE</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+```
+
+  </div><!-- /body -->
+</div><!-- /shell -->
 
 <div id="toast"></div>
 
+<!-- Firebase -->
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
 <script>
-// ── Config ──────────────────────────────────────────────────────────────────
-const PROJECT = 'quotemadness-6f26c';
-const BASE = `https://firestore.googleapis.com/v1/projects/${PROJECT}/databases/(default)/documents`;
-const USERS = ['ray','david','ej','ryan','janna','claire'];
+// ──────────────────────────────────────────────────────────────────────────────
+// CONFIG
+// ──────────────────────────────────────────────────────────────────────────────
+var ADMIN_PASS = 'cartman';
+var FB_CONFIG = {
+  apiKey:"AIzaSyCbno_M4Ge2UVzpKSZqCRqq2lC2g0dQs48",
+  authDomain:"quotemadness-6f26c.firebaseapp.com",
+  projectId:"quotemadness-6f26c",
+  storageBucket:"quotemadness-6f26c.firebasestorage.app",
+  messagingSenderId:"358193460874",
+  appId:"1:358193460874:web:fd6c4e67e8aaaebfe5df73"
+};
+var USERS = ['ray','david','ej','ryan','janna','claire'];
+var R0 = [[5,12],[6,11],[7,10],[8,9]];
+var RNAMES = ['Round 1','Quarterfinal','Semifinal','Regional Final'];
+var RCNT = [4,4,2,1];
 
-// ── State ───────────────────────────────────────────────────────────────────
-let voteCounts = {};
-let bracketData = null;
-let userVotesAll = {};
+// ──────────────────────────────────────────────────────────────────────────────
+// STATE
+// ──────────────────────────────────────────────────────────────────────────────
+var DB = null;
+var bracketData = null;
+var resultsData = {};
+var activeMatchups = [];
+var voteData = {};
+var allUserVotes = {};
+var allUserPreds = {};
+var advReg = 0;
+var unsubs = [];
 
-// ── Firestore REST helpers ──────────────────────────────────────────────────
-function fsToJs(val) {
-  if (val.stringValue !== undefined) return val.stringValue;
-  if (val.integerValue !== undefined) return parseInt(val.integerValue);
-  if (val.doubleValue !== undefined) return val.doubleValue;
-  if (val.booleanValue !== undefined) return val.booleanValue;
-  if (val.nullValue !== undefined) return null;
-  if (val.mapValue) {
-    const obj = {};
-    const fields = val.mapValue.fields || {};
-    for (const k in fields) obj[k] = fsToJs(fields[k]);
-    return obj;
-  }
-  if (val.arrayValue) {
-    return (val.arrayValue.values || []).map(fsToJs);
-  }
-  return val;
-}
+// ──────────────────────────────────────────────────────────────────────────────
+// HELPERS
+// ──────────────────────────────────────────────────────────────────────────────
+function el(id){ return document.getElementById(id); }
+function mk(r,ro,mi){ return r+'_'+ro+'_'+mi; }
+function cap(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
 
-function jsToFs(val) {
-  if (val === null || val === undefined) return { nullValue: null };
-  if (typeof val === 'string') return { stringValue: val };
-  if (typeof val === 'number') {
-    return Number.isInteger(val) ? { integerValue: String(val) } : { doubleValue: val };
-  }
-  if (typeof val === 'boolean') return { booleanValue: val };
-  if (Array.isArray(val)) return { arrayValue: { values: val.map(jsToFs) } };
-  if (typeof val === 'object') {
-    const fields = {};
-    for (const k in val) fields[k] = jsToFs(val[k]);
-    return { mapValue: { fields } };
-  }
-  return { stringValue: String(val) };
-}
-
-async function fsGet(path) {
-  const res = await fetch(`${BASE}/${path}`);
-  if (!res.ok) {
-    if (res.status === 404) return {};
-    throw new Error(`GET ${path}: ${res.status}`);
-  }
-  const doc = await res.json();
-  const out = {};
-  const fields = doc.fields || {};
-  for (const k in fields) out[k] = fsToJs(fields[k]);
-  return out;
-}
-
-async function fsSet(path, data) {
-  const fields = {};
-  for (const k in data) fields[k] = jsToFs(data[k]);
-  const res = await fetch(`${BASE}/${path}`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ fields })
-  });
-  if (!res.ok) throw new Error(`PATCH ${path}: ${res.status} ${await res.text()}`);
-  return res.json();
-}
-
-// ── Toast ───────────────────────────────────────────────────────────────────
-function toast(msg, isErr) {
-  const t = document.getElementById('toast');
+function toast(msg, isErr){
+  var t = el('toast');
   t.textContent = msg;
   t.className = isErr ? 'on err' : 'on';
-  clearTimeout(t._tid);
-  t._tid = setTimeout(() => t.className = '', 3000);
+  clearTimeout(t._t);
+  t._t = setTimeout(function(){ t.classList.remove('on','err'); }, 2800);
 }
 
-// ── Status indicator ────────────────────────────────────────────────────────
-function setStatus(state, txt) {
-  document.getElementById('status-dot').className = 'statusdot ' + state;
-  document.getElementById('status-txt').textContent = txt;
+function pp(obj){ try{ return JSON.stringify(obj, null, 2); } catch(e){ return '{}'; } }
+
+function now(){ return new Date().toLocaleTimeString(); }
+
+// ──────────────────────────────────────────────────────────────────────────────
+// AUTH
+// ──────────────────────────────────────────────────────────────────────────────
+el('btn-signin').addEventListener('click', doLogin);
+el('inp-pass').addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
+
+function doLogin(){
+  var p = el('inp-pass').value;
+  var err = el('auth-err');
+  if(p !== ADMIN_PASS){ err.textContent = 'Wrong password.'; return; }
+  err.textContent = '';
+  el('auth').style.display = 'none';
+  el('shell').classList.add('on');
+  el('tb-user').textContent = 'Admin: EJ';
+  initFirebase();
 }
 
-// ── Navigation ──────────────────────────────────────────────────────────────
-document.querySelectorAll('.nb').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.nb').forEach(b => b.classList.remove('on'));
-    document.querySelectorAll('.pg').forEach(p => p.classList.remove('on'));
-    btn.classList.add('on');
-    document.getElementById('pg-' + btn.dataset.pg).classList.add('on');
-  });
+el('btn-logout').addEventListener('click', function(){
+  location.reload();
 });
 
-// ── Load data ───────────────────────────────────────────────────────────────
-async function loadAll() {
-  setStatus('', 'Loading…');
+// ──────────────────────────────────────────────────────────────────────────────
+// FIREBASE INIT
+// ──────────────────────────────────────────────────────────────────────────────
+function initFirebase(){
   try {
-    const [vc, br] = await Promise.all([
-      fsGet('state/voteCounts'),
-      fsGet('state/bracket')
-    ]);
-    voteCounts = vc;
-    bracketData = br;
-
-    const uLoads = USERS.map(u => fsGet('votes/' + u).then(d => [u, d.picks || {}]));
-    const uResults = await Promise.all(uLoads);
-    userVotesAll = {};
-    uResults.forEach(([u, picks]) => { userVotesAll[u] = picks; });
-
-    setStatus('ok', 'Connected');
-    renderCounts();
-    renderUsers();
-    renderRaw();
-  } catch (e) {
-    console.error(e);
-    setStatus('err', 'Error — check console');
-    toast('Failed to load: ' + e.message, true);
+    try { firebase.initializeApp(FB_CONFIG); } catch(e){}
+    DB = firebase.firestore();
+    setStatus('live', 'Connected · ' + FB_CONFIG.projectId);
+    startListeners();
+    buildTabs();
+  } catch(e) {
+    setStatus('err', 'Firebase error: ' + e.message);
+    toast('Firebase error: ' + e.message, true);
   }
 }
 
-// ── Matchup label helper ────────────────────────────────────────────────────
-const RNAMES = ['Round 1','Quarterfinal','Semifinal','Regional Final'];
-const R0 = [[5,12],[6,11],[7,10],[8,9]];
-
-function matchLabel(key) {
-  const [ri, ro, mi] = key.split('_').map(Number);
-  const regions = bracketData && bracketData.regions;
-  if (!regions || !regions[ri]) return key;
-  const reg = regions[ri];
-  const rname = RNAMES[ro] || 'Round ' + ro;
-
-  function findTeam(round, matchIdx, slot) {
-    const teams = reg.teams || [];
-    if (round === 0) {
-      const seed = R0[matchIdx] && R0[matchIdx][slot];
-      return teams.find(t => t.seed === seed);
-    }
-    if (round === 1) {
-      if (slot === 0) return teams.find(t => t.seed === [1,2,3,4][matchIdx]);
-      return null;
-    }
-    return null;
-  }
-
-  const t0 = findTeam(ro, mi, 0);
-  const t1 = findTeam(ro, mi, 1);
-  const n0 = t0 ? t0.name : 'TBD';
-  const n1 = t1 ? t1.name : 'TBD';
-  return `${reg.name || 'Region '+(ri+1)} · ${rname}: ${n0} vs ${n1}`;
+function setStatus(state, txt){
+  var dot = el('fb-dot');
+  dot.className = 'status-dot ' + state;
+  el('fb-txt').textContent = txt;
 }
 
-function seedOptions(key) {
-  const [ri] = key.split('_').map(Number);
-  const regions = bracketData && bracketData.regions;
-  if (!regions || !regions[ri]) return [];
-  return (regions[ri].teams || []).map(t => ({ seed: t.seed, name: t.name }));
+// ──────────────────────────────────────────────────────────────────────────────
+// LISTENERS
+// ──────────────────────────────────────────────────────────────────────────────
+function startListeners(){
+  unsubs.push(DB.collection('state').doc('bracket').onSnapshot(function(s){
+    bracketData = s.exists ? s.data() : null;
+    onDataRefresh();
+  }));
+  unsubs.push(DB.collection('state').doc('results').onSnapshot(function(s){
+    resultsData = s.exists ? s.data() : {};
+    onDataRefresh();
+  }));
+  unsubs.push(DB.collection('state').doc('activeMatchups').onSnapshot(function(s){
+    activeMatchups = s.exists ? (s.data().keys||[]) : [];
+    onDataRefresh();
+  }));
+  unsubs.push(DB.collection('state').doc('voteCounts').onSnapshot(function(s){
+    voteData = s.exists ? s.data() : {};
+    onDataRefresh();
+  }));
+  USERS.forEach(function(u){
+    unsubs.push(DB.collection('votes').doc(u).onSnapshot(function(s){
+      allUserVotes[u] = s.exists ? (s.data().picks||{}) : {};
+      onDataRefresh();
+    }));
+    unsubs.push(DB.collection('predictions').doc(u).onSnapshot(function(s){
+      allUserPreds[u] = s.exists ? (s.data().picks||{}) : {};
+      onDataRefresh();
+    }));
+  });
 }
 
-// ── Render: Vote Counts ─────────────────────────────────────────────────────
-function renderCounts() {
-  const out = document.getElementById('counts-out');
-  const keys = Object.keys(voteCounts).filter(k => typeof voteCounts[k] === 'object');
-  if (!keys.length) {
-    out.innerHTML = '<div class="empty"><h3>No vote data</h3><p>Nothing in state/voteCounts yet.</p></div>';
-    return;
-  }
+function onDataRefresh(){
+  var cur = document.querySelector('.tab.on');
+  if(!cur) return;
+  var t = cur.dataset.tab;
+  if(t==='raw') renderRaw();
+  if(t==='bracket') { /* don't overwrite form inputs */ }
+  if(t==='results') renderResults();
+  if(t==='matchups') renderMatchups();
+  if(t==='votes') renderVotes();
+  if(t==='users') renderUsers();
+  updateTabBadges();
+}
 
-  keys.sort();
-  let html = '<div class="vgrid">';
-  keys.forEach(key => {
-    const seeds = voteCounts[key] || {};
-    const seedKeys = Object.keys(seeds).sort((a,b) => Number(a) - Number(b));
-    const total = seedKeys.reduce((s, k) => s + (seeds[k] || 0), 0);
-    html += `<div class="vcard">
-      <div class="vkey">${key}</div>
-      <div class="vlabel">${matchLabel(key)}</div>`;
-    seedKeys.forEach((sk, i) => {
-      if (i === 1) html += '<div class="vsep">VS</div>';
-      const teams = seedOptions(key);
-      const team = teams.find(t => t.seed === Number(sk));
-      html += `<div class="vrow">
-        <span class="vseed">#${sk}</span>
-        <span class="vname">${team ? team.name : 'Seed ' + sk}</span>
-        <input type="number" class="vinp" data-key="${key}" data-seed="${sk}" value="${seeds[sk] || 0}" min="0"/>
-      </div>`;
+// ──────────────────────────────────────────────────────────────────────────────
+// TABS
+// ──────────────────────────────────────────────────────────────────────────────
+function buildTabs(){
+  document.querySelectorAll('.tab').forEach(function(tab){
+    tab.addEventListener('click', function(){
+      document.querySelectorAll('.tab').forEach(function(t){ t.classList.remove('on'); });
+      document.querySelectorAll('.panel').forEach(function(p){ p.classList.remove('on'); });
+      tab.classList.add('on');
+      var name = tab.dataset.tab;
+      el('tab-' + name).classList.add('on');
+      goTab(name);
     });
-    html += `<div class="vtotal">${total} total votes</div></div>`;
   });
-  html += '</div>';
-  out.innerHTML = html;
 }
 
-// ── Render: User Votes ──────────────────────────────────────────────────────
-function renderUsers() {
-  const out = document.getElementById('users-out');
-  const allKeys = new Set();
-  USERS.forEach(u => { Object.keys(userVotesAll[u] || {}).forEach(k => allKeys.add(k)); });
-  Object.keys(voteCounts).filter(k => typeof voteCounts[k] === 'object').forEach(k => allKeys.add(k));
-  const keys = [...allKeys].sort();
+function goTab(name){
+  if(name==='raw') renderRaw();
+  else if(name==='bracket') renderBracketBuilder();
+  else if(name==='results') renderResults();
+  else if(name==='matchups') renderMatchups();
+  else if(name==='votes') renderVotes();
+  else if(name==='users') renderUsers();
+}
 
-  if (!keys.length) {
-    out.innerHTML = '<div class="empty"><h3>No matchup keys found</h3></div>';
-    return;
-  }
+function updateTabBadges(){
+  el('tn-raw').textContent = '';
+  el('tn-matchups').textContent = activeMatchups.length ? ' ('+activeMatchups.length+')' : '';
+}
 
-  let html = '<div style="overflow-x:auto"><table class="utable"><thead><tr><th>Matchup</th>';
-  USERS.forEach(u => { html += `<th>${u.charAt(0).toUpperCase() + u.slice(1)}</th>`; });
-  html += '</tr></thead><tbody>';
+// ──────────────────────────────────────────────────────────────────────────────
+// RAW JSON EDITOR
+// ──────────────────────────────────────────────────────────────────────────────
+var RAW_DOCS = [
+  { col:'state', doc:'bracket', label:'Bracket Structure' },
+  { col:'state', doc:'results', label:'Match Results' },
+  { col:'state', doc:'activeMatchups', label:'Active Matchups' },
+  { col:'state', doc:'voteCounts', label:'Vote Counts' },
+];
 
-  keys.forEach(key => {
-    const teams = seedOptions(key);
-    html += `<tr><td style="min-width:120px"><span style="color:var(--g4);font-size:.5rem">${key}</span><br>${matchLabel(key)}</td>`;
-    USERS.forEach(u => {
-      const pick = userVotesAll[u] && userVotesAll[u][key];
-      html += `<td><select class="usel" data-user="${u}" data-key="${key}">`;
-      html += `<option value="">—</option>`;
-      teams.forEach(t => {
-        html += `<option value="${t.seed}"${pick === t.seed ? ' selected' : ''}>#${t.seed} ${t.name}</option>`;
-      });
-      html += `</select></td>`;
+function renderRaw(){
+  var grid = el('raw-grid');
+  if(!grid) return;
+  // First render — build cards
+  if(!grid.children.length){
+    grid.innerHTML = '';
+    RAW_DOCS.forEach(function(d){
+      grid.appendChild(makeDocCard(d));
     });
-    html += '</tr>';
-  });
-
-  html += '</tbody></table></div>';
-  out.innerHTML = html;
+    USERS.forEach(function(u){
+      grid.appendChild(makeDocCard({col:'votes',doc:u,label:'Votes: '+cap(u)}));
+      grid.appendChild(makeDocCard({col:'predictions',doc:u,label:'Picks: '+cap(u)}));
+    });
+  } else {
+    // update textarea values from live data only if not focused
+    syncRawValues();
+  }
 }
 
-// ── Render: Raw JSON ────────────────────────────────────────────────────────
-function renderRaw() {
-  document.getElementById('raw-editor').value = JSON.stringify(voteCounts, null, 2);
+function makeDocCard(d){
+  var card = document.createElement('div'); card.className='doc-card';
+  card.dataset.col = d.col; card.dataset.doc = d.doc;
+  var data = getDocData(d.col, d.doc);
+  card.innerHTML = `
+    <div class="doc-path">
+      <span>${d.col}</span> / <span>${d.doc}</span>
+      <span style="float:right;color:var(--g6)">${d.label}</span>
+    </div>
+    <textarea class="doc-ta" spellcheck="false">${pp(data)}</textarea>
+
+```
+<div class="doc-actions">
+  <button class="doc-save btn btn-dark">Save</button>
+  <button class="doc-reload btn btn-ghost">Reload</button>
+  <span class="doc-msg"></span>
+  <span class="doc-ts"></span>
+</div>`;
+```
+
+var ta = card.querySelector(’.doc-ta’);
+var saveBtn = card.querySelector(’.doc-save’);
+var reloadBtn = card.querySelector(’.doc-reload’);
+var msg = card.querySelector(’.doc-msg’);
+var ts = card.querySelector(’.doc-ts’);
+
+saveBtn.addEventListener(‘click’, function(){
+var parsed;
+try { parsed = JSON.parse(ta.value); }
+catch(e){ msg.textContent = ‘Invalid JSON: ‘+e.message; msg.className=‘doc-msg err’; return; }
+DB.collection(d.col).doc(d.doc).set(parsed).then(function(){
+msg.textContent = ‘Saved’; msg.className=‘doc-msg ok’;
+ts.textContent = now();
+setTimeout(function(){ msg.textContent=’’; }, 2000);
+toast(’Saved ’ + d.col + ‘/’ + d.doc);
+}).catch(function(e){ msg.textContent = e.message; msg.className=‘doc-msg err’; });
+});
+
+reloadBtn.addEventListener(‘click’, function(){
+DB.collection(d.col).doc(d.doc).get().then(function(s){
+var v = s.exists ? s.data() : {};
+if(document.activeElement !== ta) ta.value = pp(v);
+ts.textContent = ’Reloaded ’ + now();
+});
+});
+
+return card;
 }
 
-// ── Save: Vote Counts ───────────────────────────────────────────────────────
-document.getElementById('btn-save-counts').addEventListener('click', async () => {
-  document.querySelectorAll('#counts-out .vinp').forEach(inp => {
-    const key = inp.dataset.key;
-    const seed = inp.dataset.seed;
-    if (!voteCounts[key]) voteCounts[key] = {};
-    voteCounts[key][seed] = parseInt(inp.value) || 0;
+function getDocData(col, doc){
+if(col===‘state’ && doc===‘bracket’) return bracketData||{};
+if(col===‘state’ && doc===‘results’) return resultsData||{};
+if(col===‘state’ && doc===‘activeMatchups’) return {keys:activeMatchups};
+if(col===‘state’ && doc===‘voteCounts’) return voteData||{};
+if(col===‘votes’) return {picks: allUserVotes[doc]||{}};
+if(col===‘predictions’) return {picks: allUserPreds[doc]||{}};
+return {};
+}
+
+function syncRawValues(){
+document.querySelectorAll(’.doc-card’).forEach(function(card){
+var ta = card.querySelector(’.doc-ta’);
+if(document.activeElement === ta) return;
+var data = getDocData(card.dataset.col, card.dataset.doc);
+ta.value = pp(data);
+});
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// BRACKET BUILDER
+// ──────────────────────────────────────────────────────────────────────────────
+function renderBracketBuilder(){
+var grid = el(‘bracket-builder’);
+if(grid.children.length) return; // already built
+grid.innerHTML = ‘’;
+for(var r=0;r<4;r++){
+var card = document.createElement(‘div’); card.className=‘rg-card’;
+var inner = ‘<div class="rg-label">Region ‘+(r+1)+’</div>’;
+inner += ‘<input class="rg-name-inp" id="bbn-'+r+'" placeholder="Region name (e.g. East)"/>’;
+for(var s=1;s<=12;s++){
+inner += ‘<div class="seed-row">’;
+inner += ‘<span class="seed-num'+(s<=4?' hl':'')+'">’+s+’</span>’;
+inner += ‘<input class="seed-inp" id="bbs-'+r+'-'+s+'" placeholder="Quote / team name"/>’;
+inner += ‘</div>’;
+}
+card.innerHTML = inner;
+grid.appendChild(card);
+}
+}
+
+el(‘btn-load-bracket’).addEventListener(‘click’, function(){
+if(!bracketData){ toast(‘No bracket in Firestore yet.’, true); return; }
+renderBracketBuilder();
+bracketData.regions.forEach(function(reg, r){
+var ni = el(‘bbn-’+r); if(ni) ni.value = reg.name||’’;
+(reg.teams||[]).forEach(function(t){
+var ti = el(‘bbs-’+r+’-’+t.seed); if(ti) ti.value = t.name||’’;
+});
+});
+el(‘bracket-pub-info’).textContent = ‘Loaded from Firestore.’;
+toast(‘Bracket loaded into builder.’);
+});
+
+el(‘btn-pub-bracket’).addEventListener(‘click’, function(){
+renderBracketBuilder();
+var regions = [];
+for(var r=0;r<4;r++){
+var name = (el(‘bbn-’+r) && el(‘bbn-’+r).value.trim()) || ‘Region ‘+(r+1);
+var teams = [];
+for(var s=1;s<=12;s++){
+var nm = (el(‘bbs-’+r+’-’+s) && el(‘bbs-’+r+’-’+s).value.trim()) || ’Seed ’+s;
+teams.push({seed:s, name:nm});
+}
+regions.push({name:name, teams:teams});
+}
+DB.collection(‘state’).doc(‘bracket’).set({regions:regions}).then(function(){
+el(‘bracket-pub-info’).textContent = ’Published ’ + now();
+toast(‘Bracket published to Firestore!’);
+}).catch(function(e){ toast(’Error: ’+e.message, true); });
+});
+
+// ──────────────────────────────────────────────────────────────────────────────
+// RESULTS
+// ──────────────────────────────────────────────────────────────────────────────
+function renderResults(){
+if(!bracketData){ el(‘results-tabs’).innerHTML=’<p style="font-family:var(--fm);font-size:.52rem;color:var(--g4);padding:.8rem">Build bracket first.</p>’; el(‘results-body’).innerHTML=’’; return; }
+renderResultsTabs();
+renderResultsRounds();
+}
+
+function renderResultsTabs(){
+var te = el(‘results-tabs’); te.innerHTML=’’;
+bracketData.regions.forEach(function(reg, rIdx){
+var t = document.createElement(‘button’); t.className=‘rtab’+(rIdx===advReg?’ on’:’’);
+t.textContent = reg.name||‘Region ‘+(rIdx+1);
+(function(i){ t.addEventListener(‘click’,function(){ advReg=i; renderResults(); }); })(rIdx);
+te.appendChild(t);
+});
+var ff = document.createElement(‘button’); ff.className=‘rtab’+(advReg===4?’ on’:’’);
+ff.textContent=‘Final Four’;
+ff.addEventListener(‘click’,function(){ advReg=4; renderResults(); });
+te.appendChild(ff);
+}
+
+function getTeam(rIdx, round, mi, slot){
+if(!bracketData) return null;
+var reg = bracketData.regions[rIdx], rr = resultsData[rIdx]||{};
+if(round===0){ return reg.teams.find(function(t){return t.seed===R0[mi][slot];})||null; }
+if(round===1){
+if(slot===0) return reg.teams.find(function(t){return t.seed===[1,2,3,4][mi];})||null;
+var w=rr[0]&&rr[0][mi]; if(!w) return {seed:’?’,name:‘TBD’,tbd:true};
+return reg.teams.find(function(t){return t.seed===w;})||null;
+}
+if(round===2){
+var r1=[[0,1],[2,3]][mi][slot];
+var w2=rr[1]&&rr[1][r1]; if(!w2) return {seed:’?’,name:‘TBD’,tbd:true};
+return reg.teams.find(function(t){return t.seed===w2;})||null;
+}
+if(round===3){
+var w3=rr[2]&&rr[2][slot]; if(!w3) return {seed:’?’,name:‘TBD’,tbd:true};
+return reg.teams.find(function(t){return t.seed===w3;})||null;
+}
+return null;
+}
+
+function regChamp(rIdx){
+if(!bracketData) return null;
+var w=resultsData[rIdx]&&resultsData[rIdx][3]&&resultsData[rIdx][3][0];
+if(!w) return null;
+return bracketData.regions[rIdx].teams.find(function(t){return t.seed===w;})||null;
+}
+
+function renderResultsRounds(){
+var rb = el(‘results-body’); rb.innerHTML=’’;
+if(advReg===4){ renderFinalFour(rb); return; }
+var rIdx = advReg, rr = resultsData[rIdx]||{};
+var scroll = document.createElement(‘div’); scroll.className=‘rounds-scroll’;
+RNAMES.forEach(function(rname, round){
+var col = document.createElement(‘div’); col.className=‘round-col’;
+col.innerHTML = ‘<div class="round-title">’+rname+’</div>’;
+for(var mi=0;mi<RCNT[round];mi++){
+var mg = document.createElement(‘div’); mg.className=‘match-box’;
+var wSeed = rr[round]&&rr[round][mi];
+[0,1].forEach(function(sl){
+if(sl===1){ var div=document.createElement(‘div’);div.className=‘ms-div’;mg.appendChild(div); }
+var team = getTeam(rIdx,round,mi,sl);
+var ts = document.createElement(‘div’);
+if(team && !team.tbd){
+ts.className = ‘match-slot’+(wSeed===team.seed?’ ms-win’:wSeed?’ ms-los’:’’);
+ts.innerHTML = ‘<span class="ms-seed">’+team.seed+’</span>’+team.name;
+(function(ri,ro,m,s){ ts.addEventListener(‘click’,function(){ advWinner(ri,ro,m,s); }); })(rIdx,round,mi,team.seed);
+} else {
+ts.className=‘match-slot ms-tbd’;
+ts.innerHTML=’<span class="ms-seed">?</span>TBD’;
+}
+mg.appendChild(ts);
+});
+col.appendChild(mg);
+}
+scroll.appendChild(col);
+});
+rb.appendChild(scroll);
+}
+
+function renderFinalFour(rb){
+var scroll = document.createElement(‘div’); scroll.className=‘rounds-scroll’;
+[4,5].forEach(function(round){
+var col = document.createElement(‘div’); col.className=‘round-col’;
+col.innerHTML = ‘<div class="round-title">’+(round===4?‘Semifinals’:‘Championship’)+’</div>’;
+var cnt = round===4?2:1;
+for(var mi=0;mi<cnt;mi++){
+var mg = document.createElement(‘div’); mg.className=‘match-box’;
+var wName = resultsData.cross_names&&resultsData.cross_names[round]&&resultsData.cross_names[round][mi];
+var teams=[];
+if(round===4){
+[[0,1],[2,3]][mi].forEach(function(ri){ var c=regChamp(ri); teams.push(c||{seed:’?’,name:‘TBD’,tbd:true}); });
+} else {
+[0,1].forEach(function(sl){
+var n=(resultsData.cross_names&&resultsData.cross_names[4]&&resultsData.cross_names[4][sl])||null;
+teams.push(n?{seed:’—’,name:n}:{seed:’?’,name:‘TBD’,tbd:true});
+});
+}
+teams.forEach(function(team,sl){
+if(sl===1){ var div=document.createElement(‘div’);div.className=‘ms-div’;mg.appendChild(div); }
+var ts=document.createElement(‘div’);
+if(team&&!team.tbd){
+ts.className=‘match-slot’+(wName&&wName===team.name?’ ms-win’:wName?’ ms-los’:’’);
+ts.innerHTML=’<span class="ms-seed">’+team.seed+’</span>’+team.name;
+(function(ro,m,nm){ ts.addEventListener(‘click’,function(){ advCross(ro,m,nm); }); })(round,mi,team.name);
+} else {
+ts.className=‘match-slot ms-tbd’;
+ts.innerHTML=’<span class="ms-seed">?</span>TBD’;
+}
+mg.appendChild(ts);
+});
+col.appendChild(mg);
+}
+scroll.appendChild(col);
+});
+var note = document.createElement(‘div’); note.className=‘ff-note’;
+note.innerHTML = ‘For the Championship, pick from the two Semifinal winners above.<br>Selecting a champion also sets <code style="font-size:.9em">champion_name</code> in the results doc.’;
+rb.appendChild(note);
+rb.appendChild(scroll);
+}
+
+function advWinner(rIdx,round,mi,seed){
+var curr=JSON.parse(JSON.stringify(resultsData));
+if(!curr[rIdx]) curr[rIdx]={};
+if(!curr[rIdx][round]) curr[rIdx][round]={};
+var prev=curr[rIdx][round][mi];
+if(prev===seed) delete curr[rIdx][round][mi];
+else curr[rIdx][round][mi]=seed;
+clearResultsDS(curr,rIdx,round,mi);
+if(prev!==seed) curr[rIdx][round][mi]=seed;
+DB.collection(‘state’).doc(‘results’).set(curr).then(function(){ toast(‘Result updated.’); }).catch(function(e){ toast(e.message,true); });
+}
+
+function clearResultsDS(res,rIdx,fr,fmi){
+if(fr===0){ if(res[rIdx]&&res[rIdx][1]) delete res[rIdx][1][fmi]; clearResultsDS(res,rIdx,1,fmi); }
+else if(fr===1){ var n=Math.floor(fmi/2); if(res[rIdx]&&res[rIdx][2]) delete res[rIdx][2][n]; clearResultsDS(res,rIdx,2,n); }
+else if(fr===2){ if(res[rIdx]&&res[rIdx][3]) delete res[rIdx][3][0]; clearResultsDS(res,rIdx,3,0); }
+else if(fr===3){ if(!res.cross_names) res.cross_names={}; if(!res.cross_names[4]) res.cross_names[4]={}; delete res.cross_names[4][rIdx<=1?0:1]; delete res.champion_name; }
+}
+
+function advCross(round,mi,name){
+var curr=JSON.parse(JSON.stringify(resultsData));
+if(!curr.cross_names) curr.cross_names={};
+if(!curr.cross_names[round]) curr.cross_names[round]={};
+if(curr.cross_names[round][mi]===name){ delete curr.cross_names[round][mi]; if(round===5) delete curr.champion_name; }
+else{ curr.cross_names[round][mi]=name; if(round===5) curr.champion_name=name; }
+DB.collection(‘state’).doc(‘results’).set(curr).then(function(){ toast(‘Final Four updated.’); }).catch(function(e){ toast(e.message,true); });
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// MATCHUPS
+// ──────────────────────────────────────────────────────────────────────────────
+function allMatchupOpts(){
+if(!bracketData) return [];
+var all=[];
+bracketData.regions.forEach(function(reg,rIdx){
+RNAMES.forEach(function(rname,round){
+for(var mi=0;mi<RCNT[round];mi++){
+var t0=getTeam(rIdx,round,mi,0), t1=getTeam(rIdx,round,mi,1);
+var isTbd = (!t0||t0.tbd||!t1||t1.tbd);
+all.push({
+key:mk(rIdx,round,mi),
+region:reg.name||’Region ‘+(rIdx+1),
+round:rname,
+label: isTbd ? ‘TBD vs TBD’ : t0.name+’ vs ’+t1.name,
+tbd: isTbd
+});
+}
+});
+});
+return all;
+}
+
+function renderMatchups(){
+var grid = el(‘matchup-grid’); grid.innerHTML=’’;
+var opts = allMatchupOpts();
+if(!opts.length){ grid.innerHTML=’<div class="empty-state"><p>Build and publish a bracket first.</p></div>’; return; }
+opts.forEach(function(o){
+var cell = document.createElement(‘div’); cell.className=‘mt-cell’;
+var cb = document.createElement(‘input’); cb.type=‘checkbox’; cb.className=‘mt-cb’; cb.id=‘mt-’+o.key; cb.checked=activeMatchups.indexOf(o.key)>=0;
+var lbl = document.createElement(‘label’); lbl.className=‘mt-lbl’+(o.tbd?’ mt-tbd’:’’); lbl.htmlFor=‘mt-’+o.key;
+lbl.innerHTML = ‘<span class="mt-region">’+o.region+’ · ‘+o.round+’</span>’+o.label;
+cell.addEventListener(‘click’, function(e){ if(e.target!==cb) cb.checked=!cb.checked; updateMtCount(); });
+cell.appendChild(cb); cell.appendChild(lbl); grid.appendChild(cell);
+});
+updateMtCount();
+}
+
+function updateMtCount(){
+var n = document.querySelectorAll(’#matchup-grid input:checked’).length;
+el(‘mt-count-txt’).textContent = n + ’ matchup’ + (n!==1?‘s’:’’) + ’ open’;
+}
+
+el(‘btn-save-matchups’).addEventListener(‘click’, function(){
+var keys=[];
+document.querySelectorAll(’#matchup-grid input[type=checkbox]’).forEach(function(cb){ if(cb.checked) keys.push(cb.id.replace(‘mt-’,’’)); });
+DB.collection(‘state’).doc(‘activeMatchups’).set({keys:keys}).then(function(){
+toast(‘Matchups saved · ‘+keys.length+’ open’);
+}).catch(function(e){ toast(e.message,true); });
+});
+
+// ──────────────────────────────────────────────────────────────────────────────
+// VOTE MONITOR
+// ──────────────────────────────────────────────────────────────────────────────
+function renderVotes(){
+var grid = el(‘vote-monitor’); grid.innerHTML=’’;
+if(!bracketData){ grid.innerHTML=’<div class="empty-state"><p>No bracket data.</p></div>’; return; }
+var allKeys=[];
+bracketData.regions.forEach(function(reg,rIdx){
+RNAMES.forEach(function(rname,round){
+for(var mi=0;mi<RCNT[round];mi++) allKeys.push({key:mk(rIdx,round,mi),reg:reg.name||‘R’+(rIdx+1),round:rname,rIdx:rIdx,round_i:round,mi:mi});
+});
+});
+// show open first, then any with votes, then rest
+allKeys.sort(function(a,b){
+var ao=activeMatchups.indexOf(a.key)>=0, bo=activeMatchups.indexOf(b.key)>=0;
+var av=Object.keys(voteData[a.key]||{}).length>0, bv=Object.keys(voteData[b.key]||{}).length>0;
+if(ao&&!bo) return -1; if(!ao&&bo) return 1;
+if(av&&!bv) return -1; if(!av&&bv) return 1;
+return 0;
+});
+allKeys.forEach(function(info){
+var t0=getTeam(info.rIdx,info.round_i,info.mi,0), t1=getTeam(info.rIdx,info.round_i,info.mi,1);
+var kv=voteData[info.key]||{};
+var total=Object.values(kv).reduce(function(a,b){return a+b;},0);
+var isOpen=activeMatchups.indexOf(info.key)>=0;
+var card=document.createElement(‘div’); card.className=‘vm-card’;
+var html=’<div class="vm-key">’+info.key+’</div>’;
+html+=(isOpen?’<span class="vm-open">Open for votes</span>’:’<span class="vm-closed">Closed</span>’);
+html+=’<div class="vm-matchup">’+info.reg+’ · ‘+info.round+’</div>’;
+var teams=[t0,t1];
+teams.forEach(function(team){
+if(!team||team.tbd) return;
+var cnt=kv[team.seed]||0;
+var pct=total>0?Math.round(cnt/total*100):0;
+html+=’<div class="vm-opt" style="position:relative;margin-bottom:3px;">’;
+html+=’<div class="vm-bar-bg" style="width:'+pct+'%"></div>’;
+html+=’<div class="vm-row-inner"><span class="vm-seed">’+team.seed+’</span><span class="vm-name">’+team.name+’</span><span class="vm-cnt">’+cnt+’</span><span class="vm-pct">’+pct+’%</span></div>’;
+html+=’</div>’;
+});
+html+=’<div class="vm-total">’+(total||0)+’ vote’+(total!==1?‘s’:’’)+’ cast</div>’;
+// who voted
+var voters=USERS.filter(function(u){ return allUserVotes[u]&&allUserVotes[u][info.key]; });
+if(voters.length) html+=’<div class="vm-total" style="margin-top:3px;">Voted: ‘+voters.map(cap).join(’, ‘)+’</div>’;
+card.innerHTML=html;
+grid.appendChild(card);
+});
+if(!grid.children.length) grid.innerHTML=’<div class="empty-state"><p>No votes yet.</p></div>’;
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// USER DATA
+// ──────────────────────────────────────────────────────────────────────────────
+function renderUsers(){
+var grid = el(‘user-grid’); grid.innerHTML=’’;
+USERS.forEach(function(u){
+var card=document.createElement(‘div’); card.className=‘ud-card’;
+var votes=allUserVotes[u]||{}, preds=allUserPreds[u]||{};
+var voteCount=Object.keys(votes).length, predCount=Object.keys(preds).length;
+var hdr=document.createElement(‘div’); hdr.className=‘ud-hdr’;
+hdr.innerHTML=’<span class="ud-name">’+cap(u)+’</span>’;
+var acts=document.createElement(‘div’); acts.className=‘ud-actions’;
+var cb=document.createElement(‘button’); cb.className=‘ud-clear-btn’; cb.textContent=‘Clear votes’;
+(function(usr){ cb.addEventListener(‘click’,function(){ clearUserVotes(usr); }); })(u);
+var cpb=document.createElement(‘button’); cpb.className=‘ud-clear-btn’; cpb.textContent=‘Clear picks’;
+(function(usr){ cpb.addEventListener(‘click’,function(){ clearUserPreds(usr); }); })(u);
+acts.appendChild(cb); acts.appendChild(cpb); hdr.appendChild(acts); card.appendChild(hdr);
+
+```
+var body=document.createElement('div'); body.className='ud-body';
+body.innerHTML='<div class="ud-sec-lbl">Votes ('+voteCount+')</div>';
+if(voteCount){
+  Object.entries(votes).slice(0,10).forEach(function(entry){
+    var k=entry[0],v=entry[1];
+    var team=getTeamBySeed(k,v);
+    body.innerHTML+='<div class="ud-vote-row"><span class="ud-vote-key">'+k+'</span><span class="ud-vote-val">Seed '+v+(team?' ('+team+')':'')+'</span></div>';
   });
-  try {
-    await fsSet('state/voteCounts', voteCounts);
-    toast('Vote counts saved.');
-    renderRaw();
-  } catch (e) {
-    toast('Save failed: ' + e.message, true);
-  }
+  if(voteCount>10) body.innerHTML+='<div class="ud-empty">+' +(voteCount-10)+' more…</div>';
+} else { body.innerHTML+='<div class="ud-empty">No votes yet</div>'; }
+body.innerHTML+='<div class="ud-sec-lbl" style="margin-top:.8rem">Bracket Picks ('+predCount+')</div>';
+if(predCount){
+  body.innerHTML+='<div class="ud-empty">'+predCount+' picks stored. View in Raw JSON tab for details.</div>';
+} else { body.innerHTML+='<div class="ud-empty">No picks yet</div>'; }
+card.appendChild(body);
+grid.appendChild(card);
+```
+
+});
+}
+
+function getTeamBySeed(matchKey, seed){
+if(!bracketData) return ‘’;
+var parts=matchKey.split(’_’); var rIdx=parseInt(parts[0]);
+if(isNaN(rIdx)||!bracketData.regions[rIdx]) return ‘’;
+var t=bracketData.regions[rIdx].teams.find(function(t){return t.seed===seed;});
+return t?t.name:’’;
+}
+
+function clearUserVotes(u){
+if(!confirm(’Clear ’+cap(u)+”’s votes?”)) return;
+var cur = JSON.parse(JSON.stringify(voteData));
+var prev = allUserVotes[u]||{};
+// decrement vote counts
+Object.entries(prev).forEach(function(entry){
+var k=entry[0],s=entry[1];
+if(cur[k]&&cur[k][s]>0) cur[k][s]–;
+});
+Promise.all([
+DB.collection(‘votes’).doc(u).set({picks:{}}),
+DB.collection(‘state’).doc(‘voteCounts’).set(cur)
+]).then(function(){ toast(cap(u)+”’s votes cleared.”); }).catch(function(e){ toast(e.message,true); });
+}
+
+function clearUserPreds(u){
+if(!confirm(’Clear ’+cap(u)+”’s bracket picks?”)) return;
+DB.collection(‘predictions’).doc(u).set({picks:{}}).then(function(){ toast(cap(u)+”’s picks cleared.”); }).catch(function(e){ toast(e.message,true); });
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// DANGER ZONE
+// ──────────────────────────────────────────────────────────────────────────────
+el(‘dz-clearvotes’).addEventListener(‘click’, function(){
+if(!confirm(‘Clear ALL votes from all users?’)) return;
+var ps=[DB.collection(‘state’).doc(‘voteCounts’).set({})];
+USERS.forEach(function(u){ ps.push(DB.collection(‘votes’).doc(u).set({picks:{}})); });
+Promise.all(ps).then(function(){ toast(‘All votes cleared.’); }).catch(function(e){ toast(e.message,true); });
 });
 
-document.getElementById('btn-reload-counts').addEventListener('click', loadAll);
-
-document.getElementById('btn-zero-counts').addEventListener('click', async () => {
-  if (!confirm('Zero out all vote counts?')) return;
-  for (const key in voteCounts) {
-    if (typeof voteCounts[key] === 'object') {
-      for (const seed in voteCounts[key]) voteCounts[key][seed] = 0;
-    }
-  }
-  try {
-    await fsSet('state/voteCounts', voteCounts);
-    toast('All counts zeroed.');
-    renderCounts();
-    renderRaw();
-  } catch (e) {
-    toast('Failed: ' + e.message, true);
-  }
+el(‘dz-clearresults’).addEventListener(‘click’, function(){
+if(!confirm(‘Wipe all match results?’)) return;
+DB.collection(‘state’).doc(‘results’).set({}).then(function(){ toast(‘Results cleared.’); }).catch(function(e){ toast(e.message,true); });
 });
 
-// ── Save: User Votes ────────────────────────────────────────────────────────
-document.getElementById('btn-save-users').addEventListener('click', async () => {
-  document.querySelectorAll('#users-out .usel').forEach(sel => {
-    const u = sel.dataset.user;
-    const key = sel.dataset.key;
-    if (!userVotesAll[u]) userVotesAll[u] = {};
-    if (sel.value) userVotesAll[u][key] = parseInt(sel.value);
-    else delete userVotesAll[u][key];
-  });
-  try {
-    await Promise.all(USERS.map(u => fsSet('votes/' + u, { picks: userVotesAll[u] || {} })));
-    toast('All user votes saved.');
-  } catch (e) {
-    toast('Save failed: ' + e.message, true);
-  }
+el(‘dz-clearactive’).addEventListener(‘click’, function(){
+if(!confirm(‘Close all matchups?’)) return;
+DB.collection(‘state’).doc(‘activeMatchups’).set({keys:[]}).then(function(){ toast(‘All matchups closed.’); }).catch(function(e){ toast(e.message,true); });
 });
 
-document.getElementById('btn-reload-users').addEventListener('click', loadAll);
-
-// ── Save: Raw JSON ──────────────────────────────────────────────────────────
-document.getElementById('btn-save-raw').addEventListener('click', async () => {
-  try {
-    const parsed = JSON.parse(document.getElementById('raw-editor').value);
-    voteCounts = parsed;
-    await fsSet('state/voteCounts', voteCounts);
-    toast('Raw JSON pushed to Firestore.');
-    renderCounts();
-  } catch (e) {
-    toast('Error: ' + e.message, true);
-  }
+el(‘dz-clearpreds’).addEventListener(‘click’, function(){
+if(!confirm(‘Clear ALL bracket picks from all users?’)) return;
+var ps=USERS.map(function(u){ return DB.collection(‘predictions’).doc(u).set({picks:{}}); });
+Promise.all(ps).then(function(){ toast(‘All picks cleared.’); }).catch(function(e){ toast(e.message,true); });
 });
 
-document.getElementById('btn-reload-raw').addEventListener('click', loadAll);
-
-// ── Init ────────────────────────────────────────────────────────────────────
-loadAll();
+el(‘dz-nuke’).addEventListener(‘click’, function(){
+if(!confirm(‘NUKE EVERYTHING? This is irreversible.’)) return;
+if(!confirm(‘Final confirmation — all bracket data, results, votes, and picks will be deleted.’)) return;
+var ps=[
+DB.collection(‘state’).doc(‘bracket’).set({}),
+DB.collection(‘state’).doc(‘results’).set({}),
+DB.collection(‘state’).doc(‘activeMatchups’).set({keys:[]}),
+DB.collection(‘state’).doc(‘voteCounts’).set({}),
+];
+USERS.forEach(function(u){
+ps.push(DB.collection(‘votes’).doc(u).set({picks:{}}));
+ps.push(DB.collection(‘predictions’).doc(u).set({picks:{}}));
+});
+Promise.all(ps).then(function(){ toast(‘Everything nuked.’); }).catch(function(e){ toast(e.message,true); });
+});
 </script>
+
 </body>
 </html>
