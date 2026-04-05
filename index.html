@@ -190,21 +190,9 @@ body{background:var(--k);color:var(--w);font-family:var(--fb);min-height:100vh;l
 </head>
 <body>
 
-<!-- AUTH -->
-
-<div id="auth">
-  <div class="abox">
-    <div class="atitle">QM Admin<small>Firestore Editor &middot; Internal Tool</small></div>
-    <div class="aerr" id="auth-err"></div>
-    <label class="albl">Admin Password</label>
-    <input type="password" class="ainp" id="inp-pass" placeholder="Enter EJ's password"/>
-    <button class="abtn" id="btn-signin">Access Admin Panel</button>
-  </div>
-</div>
-
 <!-- SHELL -->
 
-<div id="shell">
+<div id="shell" class="on">
   <!-- Topbar -->
   <div id="topbar">
     <div class="tb-brand">
@@ -425,23 +413,8 @@ function now(){ return new Date().toLocaleTimeString(); }
 // ──────────────────────────────────────────────────────────────────────────────
 // AUTH
 // ──────────────────────────────────────────────────────────────────────────────
-el('btn-signin').addEventListener('click', doLogin);
-el('inp-pass').addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
-
-function doLogin(){
-  var p = el('inp-pass').value;
-  var err = el('auth-err');
-  if(p !== ADMIN_PASS){ err.textContent = 'Wrong password.'; return; }
-  err.textContent = '';
-  el('auth').style.display = 'none';
-  el('shell').classList.add('on');
-  el('tb-user').textContent = 'Admin: EJ';
-  initFirebase();
-}
-
-el('btn-logout').addEventListener('click', function(){
-  location.reload();
-});
+el('tb-user').textContent = 'Admin: EJ';
+el('btn-logout').addEventListener('click', function(){ location.reload(); });
 
 // ──────────────────────────────────────────────────────────────────────────────
 // FIREBASE INIT
